@@ -23,6 +23,9 @@ RUN refreshenv \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
 && gem install windows-pr -v 1.2.6 \
+&& gem install fluent-plugin-kubernetes_metadata_filter -v 2.4.1 \
+&& gem install fluent-plugin-elasticsearch -v 4.0.3 \
+&& gem install fluent-plugin-prometheus -v 1.7.3 \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
