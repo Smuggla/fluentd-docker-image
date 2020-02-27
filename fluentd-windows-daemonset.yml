@@ -1,0 +1,111 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  namespace: montioring
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: fluentd
+  namespace: montioring
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: fluentd
+roleRef:
+  kind: ClusterRole
+  name: fluentd
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: fluentd
+  namespace: montioring
+---  
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: fluentd-windows
+  namespace: montioring
+  labels:
+    app: fluentd-windows-logging
+    version: v1
+  annotations:
+    prometheus.io/port: "24231"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: fluentd-windows-logging
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: fluentd-windows-logging
+        version: v1
+    spec:
+      serviceAccount: fluentd
+      serviceAccountName: fluentd
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+      containers:
+      - name: fluentd
+        image: ""
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 24231
+            name: metrics
+            protocol: TCP
+        env:
+          - name:  FLUENT_ELASTICSEARCH_HOST
+            value: ""
+          - name:  FLUENT_ELASTICSEARCH_PORT
+            value: ""
+          - name: FLUENT_ELASTICSEARCH_SCHEME
+            value: "https"
+          - name: FLUENT_ELASTICSEARCH_SSL_VERIFY
+            value: "true"
+          - name: FLUENT_ELASTICSEARCH_SSL_VERSION
+            value: "TLSv1_2"
+          - name: FLUENT_ELASTICSEARCH_USER
+            value: ""
+          - name: FLUENT_ELASTICSEARCH_PASSWORD
+            value: ""
+          - name: FLUENT_ELASTICSEARCH_LOGSTASH_PREFIX
+            value: "fluentd"
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: progdatacontainers
+          mountPath: /ProgramData/docker/containers
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: progdatacontainers
+        hostPath:
+          path: /ProgramData/docker/containers
